@@ -660,10 +660,17 @@ encode_grants(Grants) ->
 
 encode_grant(Grant) ->
     Grantee = proplists:get_value(grantee, Grant),
+    GranteeProps = case Grantee of
+      all ->
+	{'Grantee', [{'xmlns:xsi', "http://www.w3.org/2001/XMLSchema-instance"}, {'xsi:type', "Group"}],
+	  [{'URI', ["http://acs.amazonaws.com/groups/global/AllUsers"]}]};
+      Grantee ->
+	{'Grantee', [{'xmlns:xsi', "http://www.w3.org/2001/XMLSchema-instance"}, {'xsi:type', "CanonicalUser"}],
+	  [{'ID', [proplists:get_value(id, Grantee)]},
+	    {'DisplayName', [proplists:get_value(display_name, Grantee)]}]}
+    end,
     {'Grant',
-     [{'Grantee', [{xmlns, ?XMLNS_S3}],
-       [{'ID', [proplists:get_value(id, Grantee)]},
-        {'DisplayName', [proplists:get_value(display_name, Grantee)]}]},
+      [GranteeProps,
       {'Permission', [encode_permission(proplists:get_value(permission, Grant))]}]}.
 
 s3_simple_request(Config, Method, Host, Path, Subresource, Params, POSTData, Headers) ->
